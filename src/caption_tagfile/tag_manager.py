@@ -10,7 +10,7 @@ class TagfileManager:
     def get_tagfile_path(image_path: Union[str, Path]) -> Path:
         """Generate the tagfile path (e.g., '.image.jpg.json')."""
         image_path = Path(image_path)
-        return image_path.parent / f".{image_path.name}.json"
+        return image_path.parent / f"{image_path.name}.json"
 
     @staticmethod
     def get_txt_path(image_path: Union[str, Path]) -> Path:
