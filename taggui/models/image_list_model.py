@@ -17,6 +17,8 @@ from utils.image import Image
 from utils.settings import DEFAULT_SETTINGS, get_settings
 from utils.utils import get_confirmation_dialog_reply, pluralize
 
+from caption_tagfile.tag_manager import TagfileManager
+
 UNDO_STACK_SIZE = 32
 
 
@@ -171,6 +173,7 @@ class ImageListModel(QAbstractListModel):
         self.update_undo_and_redo_actions_requested.emit()
 
     def write_image_tags_to_disk(self, image: Image):
+        print(f"writing image tags to disk for {image.path}")
         try:
             image.path.with_suffix('.txt').write_text(
                 self.tag_separator.join(image.tags), encoding='utf-8',
@@ -181,6 +184,11 @@ class ImageListModel(QAbstractListModel):
             error_message_box.setIcon(QMessageBox.Icon.Critical)
             error_message_box.setText(f'Failed to save tags for {image.path}.')
             error_message_box.exec()
+        try:
+            mgr = TagfileManager()
+            mgr.create(image.path, captions={"test": "hello"}, tags=["tag1"], )
+        except OSError:
+            print("it didn't bloody work!")
 
     def restore_history_tags(self, is_undo: bool):
         if is_undo:
