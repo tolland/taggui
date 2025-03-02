@@ -13,7 +13,7 @@ from PySide6.QtCore import (QAbstractListModel, QModelIndex, QSize, Qt, Signal,
 from PySide6.QtGui import QIcon, QImageReader, QPixmap
 from PySide6.QtWidgets import QMessageBox
 
-from utils.image import Image
+from utils.image import Image, ImageTags
 from utils.io import TxtFileIoProvider
 from utils.settings import DEFAULT_SETTINGS, get_settings
 from utils.utils import get_confirmation_dialog_reply, pluralize
@@ -62,6 +62,7 @@ class ImageListModel(QAbstractListModel):
         self.redo_stack = []
         self.proxy_image_list_model = None
         self.image_list_selection_model = None
+        self.IoProvider = TxtFileIoProvider
 
     def rowCount(self, parent=None) -> int:
         return len(self.images)
@@ -74,7 +75,7 @@ class ImageListModel(QAbstractListModel):
             # The text shown next to the thumbnail in the image list.
             text = image.path.name
             if image.tags:
-                caption = self.tag_separator.join(image.tags)
+                caption = self.tag_separator.join(image.tags.tags)
                 text += f'\n{caption}'
             return text
         if role == Qt.ItemDataRole.DecorationRole:
@@ -148,17 +149,7 @@ class ImageListModel(QAbstractListModel):
                 print(f'Failed to get dimensions for {image_path}: '
                       f'{exception}', file=sys.stderr)
                 dimensions = None
-            tags = []
-            text_file_path = image_path.with_suffix('.txt')
-            if str(text_file_path) in text_file_path_strings:
-                # `errors='replace'` inserts a replacement marker such as '?'
-                # when there is malformed data.
-                caption = text_file_path.read_text(encoding='utf-8',
-                                                   errors='replace')
-                if caption:
-                    tags = caption.split(self.tag_separator)
-                    tags = [tag.strip() for tag in tags]
-                    tags = [tag for tag in tags if tag]
+            tags = self.IoProvider.read_image_tags(image_path, self.tag_separator)
             image = Image(image_path, dimensions, tags)
             self.images.append(image)
         self.images.sort(key=lambda image_: image_.path)
@@ -167,14 +158,14 @@ class ImageListModel(QAbstractListModel):
     def add_to_undo_stack(self, action_name: str,
                           should_ask_for_confirmation: bool):
         """Add the current state of the image tags to the undo stack."""
-        tags = [image.tags.copy() for image in self.images]
+        tags = [image.tags.tags.copy() for image in self.images]
         self.undo_stack.append(HistoryItem(action_name, tags,
                                            should_ask_for_confirmation))
         self.redo_stack.clear()
         self.update_undo_and_redo_actions_requested.emit()
 
     def write_image_tags_to_disk(self, image: Image):
-        TxtFileIoProvider.write_image_tags(image, self.tag_separator)
+        self.IoProvider.write_image_tags(image, self.tag_separator)
 
     def restore_history_tags(self, is_undo: bool):
         if is_undo:

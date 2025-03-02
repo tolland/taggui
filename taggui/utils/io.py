@@ -1,8 +1,10 @@
 from abc import ABC, abstractmethod
+from pathlib import Path
 
 from caption_tagfile.tag_manager import TagfileManager
-from utils.image import Image
+from utils.image import Image, ImageTags
 from PySide6.QtWidgets import QMessageBox
+
 
 class BaseIoProvider(ABC):
     """
@@ -14,7 +16,7 @@ class BaseIoProvider(ABC):
 
     @staticmethod
     @abstractmethod
-    def read_image_tags(key, default=None):
+    def read_image_tags(path: Path | str, tag_separator: str) -> ImageTags:
         """
         Retrieves tags for image file
         """
@@ -40,7 +42,7 @@ class TxtFileIoProvider(BaseIoProvider):
         print(f"writing image tags to disk for {image.path}")
         try:
             image.path.with_suffix('.txt').write_text(
-                tag_separator.join(image.tags), encoding='utf-8',
+                tag_separator.join(image.tags.tags), encoding='utf-8',
                 errors='replace')
         except OSError:
             error_message_box = QMessageBox()
@@ -55,5 +57,14 @@ class TxtFileIoProvider(BaseIoProvider):
             print("it didn't bloody work!")
 
     @staticmethod
-    def read_image_tags(key, default=None):
-        pass
+    def read_image_tags(path: Path, tag_separator: str):
+        # caption = path.read_text(encoding='utf-8',                               errors='replace')
+        mgr = TagfileManager()
+        loaded = mgr.read(path)
+        caption = loaded.captions["default"]
+        tags = []
+        if caption:
+            tags = caption.split(tag_separator)
+            tags = [tag.strip() for tag in tags]
+            tags = [tag for tag in tags if tag]
+        return ImageTags(tags=tags, model="default")
