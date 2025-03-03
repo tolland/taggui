@@ -13,7 +13,7 @@ from utils.settings import DEFAULT_SETTINGS, get_settings
 from utils.text_edit_item_delegate import TextEditItemDelegate
 from utils.utils import get_confirmation_dialog_reply
 from widgets.image_list import ImageList
-
+from loguru import logger
 MAX_TOKEN_COUNT = 75
 
 
@@ -136,8 +136,10 @@ class ImageTagsList(QListView):
 class ImageTagsEditor(QDockWidget):
     def __init__(self, proxy_image_list_model: ProxyImageListModel,
                  tag_counter_model: TagCounterModel,
-                 image_tag_list_model: QStringListModel, image_list: ImageList,
-                 tokenizer: PreTrainedTokenizerBase, tag_separator: str):
+                 image_tag_list_model: QStringListModel,
+                 image_list: ImageList,
+                 tokenizer: PreTrainedTokenizerBase,
+                 tag_separator: str):
         super().__init__()
         self.proxy_image_list_model = proxy_image_list_model
         self.image_tag_list_model = image_tag_list_model
@@ -207,18 +209,21 @@ class ImageTagsEditor(QDockWidget):
             proxy_image_index)
         image: Image = self.proxy_image_list_model.data(
             proxy_image_index, Qt.ItemDataRole.UserRole)
+        logger.info(f'Loading tags for {image.path}')
         # If the string list already contains the image's tags, do not reload
         # them. This is the case when the tags are edited directly through the
         # image tags editor. Removing this check breaks the functionality of
         # reordering multiple tags at the same time because it gets interrupted
         # after one tag is moved.
         current_string_list = self.image_tag_list_model.stringList()
-        if current_string_list == image.tags:
+        logger.info(f'current_string_list : {current_string_list=}')
+        if current_string_list == image.tags.tags:
             return
-        self.image_tag_list_model.setStringList(image.tags)
+        self.image_tag_list_model.setStringList(image.tags.tags)
         self.count_tokens()
         if self.image_tags_list.hasFocus():
             self.select_first_tag()
+        logger.info(f'got here')
 
     @Slot()
     def reload_image_tags_if_changed(self, first_changed_index: QModelIndex,

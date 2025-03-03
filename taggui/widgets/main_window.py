@@ -27,6 +27,8 @@ from widgets.image_list import ImageList
 from widgets.image_tags_editor import ImageTagsEditor
 from widgets.image_viewer import ImageViewer
 
+from loguru import logger
+
 ICON_PATH = Path('images/icon.ico')
 GITHUB_REPOSITORY_URL = 'https://github.com/jhc13/taggui'
 TOKENIZER_DIRECTORY_PATH = Path('clip-vit-base-patch32')
@@ -78,8 +80,10 @@ class MainWindow(QMainWindow):
                                                 .all_tags_list)
         self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea,
                            self.all_tags_editor)
+
         self.auto_captioner = AutoCaptioner(self.image_list_model,
                                             self.image_list)
+
         self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea,
                            self.auto_captioner)
         self.tabifyDockWidget(self.all_tags_editor, self.auto_captioner)
@@ -466,11 +470,13 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def update_image_tags(self):
+        logger.info(f"updating image tags in main window")
         image_index = self.image_tags_editor.image_index
         image: Image = self.image_list_model.data(image_index,
                                                   Qt.ItemDataRole.UserRole)
-        old_tags = image.tags
+        old_tags = image.tags.tags
         new_tags = self.image_tag_list_model.stringList()
+        logger.info(f"updating image tags {old_tags=} {new_tags=}")
         if old_tags == new_tags:
             return
         old_tags_count = len(old_tags)
@@ -544,13 +550,15 @@ class MainWindow(QMainWindow):
                 self.all_tags_editor.isVisible()))
 
     def connect_auto_captioner_signals(self):
+
         self.auto_captioner.caption_generated.connect(
             lambda image_index, _, tags:
             self.image_list_model.update_image_tags(image_index, tags))
+
         self.auto_captioner.caption_generated.connect(
             lambda image_index, *_:
-            self.image_tags_editor.reload_image_tags_if_changed(image_index,
-                                                                image_index))
+            self.image_tags_editor.reload_image_tags_if_changed(image_index, image_index))
+
         self.auto_captioner.visibilityChanged.connect(
             lambda: self.toggle_auto_captioner_action.setChecked(
                 self.auto_captioner.isVisible()))

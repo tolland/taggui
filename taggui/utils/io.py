@@ -5,6 +5,8 @@ from caption_tagfile.tag_manager import TagfileManager
 from utils.image import Image, ImageTags
 from PySide6.QtWidgets import QMessageBox
 
+from loguru import logger
+
 
 class BaseIoProvider(ABC):
     """
@@ -39,7 +41,7 @@ class TxtFileIoProvider(BaseIoProvider):
 
     @staticmethod
     def write_image_tags(image: Image, tag_separator: str):
-        print(f"writing image tags to disk for {image.path}")
+        logger.info(f"writing image tags to disk for '{image.path}' and model '{image.tags.model}' tags '{image.tags.tags}'")
         try:
             image.path.with_suffix('.txt').write_text(
                 tag_separator.join(image.tags.tags), encoding='utf-8',
@@ -51,14 +53,18 @@ class TxtFileIoProvider(BaseIoProvider):
             error_message_box.setText(f'Failed to save tags for {image.path}.')
             error_message_box.exec()
         try:
+            logger.info(f"actually writing image tags to disk for '{image.path}' and model '{image.tags.model}' tags '{image.tags.tags}'")
             mgr = TagfileManager()
-            mgr.create(image.path, captions={"test": "hello"}, tags=["tag1"], )
+            captions = {image.tags.model: ", ".join(image.tags.tags)}
+            logger.info(f"captions: {captions}")
+            mgr.create(image.path, captions=captions, tags=["tag1","other","other"], )
         except OSError:
             print("it didn't bloody work!")
 
     @staticmethod
     def read_image_tags(path: Path, tag_separator: str):
         # caption = path.read_text(encoding='utf-8',                               errors='replace')
+        logger.info("showing info logs")
         mgr = TagfileManager()
         loaded = mgr.read(path)
         caption = loaded.captions["default"]

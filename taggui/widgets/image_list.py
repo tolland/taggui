@@ -190,7 +190,7 @@ class ImageListView(QListView):
     @Slot()
     def copy_selected_image_tags(self):
         selected_images = self.get_selected_images()
-        selected_image_captions = [self.tag_separator.join(image.tags)
+        selected_image_captions = [self.tag_separator.join(image.tags.tags)
                                    for image in selected_images]
         QApplication.clipboard().setText('\n'.join(selected_image_captions))
 
@@ -417,7 +417,7 @@ class ImageList(QDockWidget):
             image: Image = self.proxy_image_list_model.data(
                 self.proxy_image_list_model.index(proxy_image_index, 0),
                 Qt.ItemDataRole.UserRole)
-            if not image.tags:
+            if not image.tags.tags:
                 break
         if proxy_image_index is None:
             return

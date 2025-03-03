@@ -19,7 +19,7 @@ from utils.image import Image
 def replace_template_variable(match: re.Match, image: Image) -> str:
     template_variable = match.group(0)[1:-1].lower()
     if template_variable == 'tags':
-        return ', '.join(image.tags)
+        return ', '.join(image.tags.tags)
     if template_variable == 'name':
         return image.path.stem
     if template_variable in ('directory', 'folder'):

@@ -15,6 +15,7 @@ from dialogs.caption_multiple_images_dialog import CaptionMultipleImagesDialog
 from models.image_list_model import ImageListModel
 from utils.big_widgets import TallPushButton
 from utils.enums import CaptionDevice, CaptionPosition
+from utils.image import ImageTags
 from utils.settings import DEFAULT_SETTINGS, get_settings, get_tag_separator
 from utils.settings_widgets import (FocusedScrollSettingsComboBox,
                                     FocusedScrollSettingsDoubleSpinBox,
@@ -350,7 +351,7 @@ def restore_stdout_and_stderr():
 
 
 class AutoCaptioner(QDockWidget):
-    caption_generated = Signal(QModelIndex, str, list)
+    caption_generated = Signal(QModelIndex, str, ImageTags)
 
     def __init__(self, image_list_model: ImageListModel,
                  image_list: ImageList):
@@ -494,8 +495,10 @@ class AutoCaptioner(QDockWidget):
             self.update_console_text_edit)
         self.captioning_thread.clear_console_text_edit_requested.connect(
             self.console_text_edit.clear)
+
         self.captioning_thread.caption_generated.connect(
             self.caption_generated)
+
         self.captioning_thread.progress_bar_update_requested.connect(
             self.progress_bar.setValue)
         self.captioning_thread.finished.connect(

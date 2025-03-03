@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Union, Dict, List, Optional
 
 from .caption_tagfile import CaptionTagfile
+from loguru import logger
 
 
 class TagfileManager:
@@ -47,20 +48,40 @@ class TagfileManager:
         raise FileNotFoundError(f"No tagfile (.json or .txt) found for {image_path}")
 
     @staticmethod
-    def write(image_path: Union[str, Path], tagfile: CaptionTagfile) -> None:
+    def write(
+            image_path: Union[str, Path],
+            tagfile: CaptionTagfile
+    ) -> None:
         """Write a CaptionTagfile object to disk as JSON."""
+        logger.info(f"Writing {image_path} to {tagfile}")
         tagfile_path = TagfileManager.get_tagfile_path(image_path)
         # Update hash if not set
         if not tagfile.hash:
             tagfile.hash = CaptionTagfile.generate_hash(image_path)
+
+        old_tag_file = TagfileManager.read(image_path)
+        for caption in tagfile.captions:
+            logger.info(f"caption {caption} {tagfile.captions[caption]}")
+            if tagfile.captions[caption]:
+                old_tag_file.captions[caption] = tagfile.captions[caption]
+        old_tag_file.tags = tagfile.tags
+
+        logger.info(f"writing tagfile for {tagfile} captions {old_tag_file.captions} tags {old_tag_file.tags}")
+
+
         with open(tagfile_path, "w") as f:
-            json.dump(tagfile.model_dump(), f, indent=2)
+            json.dump(old_tag_file.model_dump(), f, indent=2)
 
     @staticmethod
-    def create(image_path: Union[str, Path], captions: Optional[Dict[str, str]] = None, tags: Optional[List[str]] = None) -> CaptionTagfile:
+    def create(
+            image_path: Union[str, Path],
+            captions: Optional[Dict[str, str]] = None,
+            tags: Optional[List[str]] = None,
+    ) -> CaptionTagfile:
         """Create a new tagfile, checking for existing .txt."""
         image_path = Path(image_path)
         txt_path = TagfileManager.get_txt_path(image_path)
+        logger.info(f"creating tagfile for {image_path} txt_path {txt_path} captions {captions} tags {tags}")
         captions = captions or {}
 
         # If .txt exists and no 'default' caption provided, migrate it

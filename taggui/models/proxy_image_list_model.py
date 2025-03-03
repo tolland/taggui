@@ -20,7 +20,7 @@ class ProxyImageListModel(QSortFilterProxyModel):
     def does_image_match_filter(self, image: Image,
                                 filter_: list | str) -> bool:
         if isinstance(filter_, str):
-            return (fnmatchcase(self.tag_separator.join(image.tags),
+            return (fnmatchcase(self.tag_separator.join(image.tags.tags),
                                 f'*{filter_}*')
                     or fnmatchcase(str(image.path), f'*{filter_}*'))
         if len(filter_) == 1:
@@ -29,9 +29,9 @@ class ProxyImageListModel(QSortFilterProxyModel):
             if filter_[0] == 'NOT':
                 return not self.does_image_match_filter(image, filter_[1])
             if filter_[0] == 'tag':
-                return any(fnmatchcase(tag, filter_[1]) for tag in image.tags)
+                return any(fnmatchcase(tag, filter_[1]) for tag in image.tags.tags)
             if filter_[0] == 'caption':
-                caption = self.tag_separator.join(image.tags)
+                caption = self.tag_separator.join(image.tags.tags)
                 return fnmatchcase(caption, f'*{filter_[1]}*')
             if filter_[0] == 'name':
                 return fnmatchcase(image.path.name, f'*{filter_[1]}*')
@@ -55,12 +55,12 @@ class ProxyImageListModel(QSortFilterProxyModel):
         comparison_operator = comparison_operators[filter_[1]]
         number_to_compare = None
         if filter_[0] == 'tags':
-            number_to_compare = len(image.tags)
+            number_to_compare = len(image.tags.tags)
         elif filter_[0] == 'chars':
-            caption = self.tag_separator.join(image.tags)
+            caption = self.tag_separator.join(image.tags.tags)
             number_to_compare = len(caption)
         elif filter_[0] == 'tokens':
-            caption = self.tag_separator.join(image.tags)
+            caption = self.tag_separator.join(image.tags.tags)
             # Subtract 2 for the `<|startoftext|>` and `<|endoftext|>` tokens.
             number_to_compare = len(self.tokenizer(caption).input_ids) - 2
         return comparison_operator(number_to_compare, int(filter_[2]))
